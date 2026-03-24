@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartFix | Technician Panel</title>
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<nav class="navbar">
+  <div class="logo">SmartFix</div>
+  <div class="nav-right">
+    <span class="role-badge tech-badge">Technician Panel</span>
+    <button class="btn-logout" onclick="logout()">Logout</button>
+  </div>
+</nav>
+
+<div class="dashboard">
+
+  <div class="card">
+    <h2>Assigned Complaints</h2>
+    <p class="subtitle-text">
+      Below are complaints assigned to you. Mark them resolved after completion.
+    </p>
+  </div>
+
+  <div id="complaintList" class="complaint-grid"></div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
