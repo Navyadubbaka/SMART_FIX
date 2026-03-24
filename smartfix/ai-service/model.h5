@@ -1,0 +1,2 @@
+Placeholder model file.
+Run `python train.py` to generate a real TensorFlow model.
