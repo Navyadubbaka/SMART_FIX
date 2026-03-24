@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Register - SmartFix</title>
+    <link rel="stylesheet" href="./css/style.css" />
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h2 class="page-title">Register</h2>
+        <p class="muted">Create your role-based SmartFix account.</p>
+        <input id="name" placeholder="Full Name" />
+        <input id="email" type="email" placeholder="Email" />
+        <input id="password" type="password" placeholder="Password" />
+        <select id="role">
+          <option value="user">User</option>
+          <option value="technician">Technician</option>
+          <option value="admin">Admin</option>
+        </select>
+        <input id="skills" placeholder="Technician skills (comma separated)" />
+        <button id="registerBtn">Create Account</button>
+        <p id="msg"></p>
+        <p class="muted">Already have an account? <a href="./login.html">Login</a></p>
+      </div>
+    </div>
+    <script src="./js/api.js"></script>
+    <script src="./js/register.js"></script>
+  </body>
+</html>
