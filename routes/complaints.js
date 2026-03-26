@@ -74,8 +74,57 @@ router.post("/", upload.single("image"), async (req, res) => {
     }
 
     let predictedCategory = "General";
+    let textCategory = null;
 
-    if (image) {
+    // Step 1: Always check text keywords first (if issue text is provided)
+    if (issue) {
+      const text = issue.toLowerCase();
+
+      if (
+        text.includes("pipe") ||
+        text.includes("water") ||
+        text.includes("leak") ||
+        text.includes("tap") ||
+        text.includes("plumbing") ||
+        text.includes("drain") ||
+        text.includes("faucet") ||
+        text.includes("toilet") ||
+        text.includes("shower")
+      ) {
+        textCategory = "Plumbing";
+      }
+
+      else if (
+        text.includes("light") ||
+        text.includes("wire") ||
+        text.includes("electric") ||
+        text.includes("switch") ||
+        text.includes("power") ||
+        text.includes("socket") ||
+        text.includes("circuit") ||
+        text.includes("fan")
+      ) {
+        textCategory = "Electrical";
+      }
+
+      else if (
+        text.includes("door") ||
+        text.includes("wood") ||
+        text.includes("furniture") ||
+        text.includes("cabinet") ||
+        text.includes("shelf") ||
+        text.includes("table") ||
+        text.includes("chair")
+      ) {
+        textCategory = "Carpentry";
+      }
+    }
+
+    // Step 2: If text gave a clear category, use it; otherwise use AI image prediction
+    if (textCategory) {
+      predictedCategory = textCategory;
+      console.log("Text-based Category:", predictedCategory);
+    } else if (image) {
 
       const imagePath = "uploads/" + image;
 
@@ -91,38 +140,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       predictedCategory = aiResponse.data.category;
 
       console.log("AI Predicted Category:", predictedCategory);
-
-    }
-
-    else if (issue) {
-
-      const text = issue.toLowerCase();
-
-      if (
-        text.includes("pipe") ||
-        text.includes("water") ||
-        text.includes("leak") ||
-        text.includes("tap")
-      ) {
-        predictedCategory = "Plumbing";
-      }
-
-      else if (
-        text.includes("light") ||
-        text.includes("wire") ||
-        text.includes("electric") ||
-        text.includes("switch")
-      ) {
-        predictedCategory = "Electrical";
-      }
-
-      else if (
-        text.includes("door") ||
-        text.includes("wood") ||
-        text.includes("furniture")
-      ) {
-        predictedCategory = "Carpentry";
-      }
 
     }
 

@@ -4,9 +4,9 @@ const currentUser = JSON.parse(sessionStorage.getItem("user"));
 const currentPage = window.location.pathname;
 
 if (!currentUser &&
-    !currentPage.includes("index.html") &&
+    !currentPage.includes("login.html") && !currentPage.includes("index.html") &&
     !currentPage.includes("register.html")) {
-  window.location.href = "index.html";
+  window.location.href = "login.html";
 }
 
 const loginForm = document.getElementById("loginForm");
@@ -59,7 +59,7 @@ if (loginForm) {
 
 function logout() {
   sessionStorage.clear();
-  window.location.href = "index.html";
+  window.location.href = "login.html";
 }
 
 async function loadTechnicians() {
