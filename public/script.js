@@ -163,6 +163,14 @@ async function loadComplaints() {
               : ""
           }
 
+          ${
+            currentUser.role === "admin" && c.status === "Resolved"
+              ? `<button class="btn-delete" onclick="deleteComplaint(${c.id})">
+                   🗑 Delete
+                 </button>`
+              : ""
+          }
+
         </div>
       `;
     });
@@ -245,6 +253,27 @@ async function resolveComplaint(id) {
   } catch (error) {
 
     console.error("Error resolving complaint:", error);
+
+  }
+}
+
+async function deleteComplaint(id) {
+
+  const confirmDelete = confirm("Delete this resolved complaint?");
+
+  if (!confirmDelete) return;
+
+  try {
+
+    await fetch(API + "/complaints/" + id, {
+      method: "DELETE"
+    });
+
+    loadComplaints();
+
+  } catch (error) {
+
+    console.error("Error deleting complaint:", error);
 
   }
 }

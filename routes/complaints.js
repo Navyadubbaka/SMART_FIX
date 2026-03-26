@@ -255,5 +255,27 @@ router.put("/resolve/:id", (req, res) => {
   );
 
 });
+router.delete("/:id", (req, res) => {
+
+  const id = req.params.id;
+
+  const sql = "DELETE FROM complaints WHERE id = ?";
+
+  db.query(sql, [id], (err, result) => {
+
+    if (err) {
+      console.error("Delete error:", err);
+      return res.status(500).json({ message: "Database error" });
+    }
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ message: "Complaint not found" });
+    }
+
+    res.json({ message: "Complaint deleted successfully" });
+
+  });
+
+});
 
 module.exports = router;
