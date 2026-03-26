@@ -123,7 +123,7 @@ async function loadComplaints() {
 
             ${
               c.user_phone
-              ? `<a href="tel:${c.user_phone}" class="call-btn">📞 Call User</a><br>`
+              ? `<button class="call-btn" onclick="openCallModal('${(c.user_name || 'User').replace(/'/g, "\\'") }', '${c.user_phone}', 'User')">📞 Call User</button><br>`
               : `<strong>User Phone:</strong> N/A <br>`
             }
 
@@ -139,7 +139,7 @@ async function loadComplaints() {
 
             ${
               c.technician_phone
-              ? `<a href="tel:${c.technician_phone}" class="call-btn">📞 Call Technician</a><br>`
+              ? `<button class="call-btn" onclick="openCallModal('${(c.technician_name || 'Technician').replace(/'/g, "\\'") }', '${c.technician_phone}', 'Technician')">📞 Call Technician</button><br>`
               : `<strong>Technician Phone:</strong> N/A <br>`
             }
 
@@ -290,3 +290,50 @@ if (currentPage.includes("user")) {
 if (currentPage.includes("technician")) {
   loadComplaints();
 }
+
+// ===== CALL MODAL FUNCTIONS =====
+
+function openCallModal(name, phone, role) {
+  const overlay = document.getElementById("callModalOverlay");
+  if (!overlay) return;
+
+  const initial = name.charAt(0).toUpperCase();
+
+  document.getElementById("callModalAvatar").textContent = initial;
+  document.getElementById("callModalName").textContent = name;
+  document.getElementById("callModalRole").textContent = role;
+  document.getElementById("callModalPhone").textContent = phone;
+  document.getElementById("callModalCallBtn").href = "tel:" + phone;
+
+  // Reset copy button
+  const copyBtn = document.getElementById("callModalCopyBtn");
+  copyBtn.classList.remove("copied");
+  copyBtn.innerHTML = "📋 Copy Number";
+
+  overlay.classList.add("active");
+}
+
+function closeCallModal() {
+  const overlay = document.getElementById("callModalOverlay");
+  if (overlay) overlay.classList.remove("active");
+}
+
+function copyPhoneNumber() {
+  const phone = document.getElementById("callModalPhone").textContent;
+  navigator.clipboard.writeText(phone).then(() => {
+    const btn = document.getElementById("callModalCopyBtn");
+    btn.classList.add("copied");
+    btn.innerHTML = "✅ Copied!";
+    setTimeout(() => {
+      btn.classList.remove("copied");
+      btn.innerHTML = "📋 Copy Number";
+    }, 2000);
+  });
+}
+
+// Close modal when clicking the backdrop
+document.addEventListener("click", function(e) {
+  if (e.target && e.target.id === "callModalOverlay") {
+    closeCallModal();
+  }
+});
