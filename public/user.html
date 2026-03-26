@@ -50,6 +50,26 @@
 
 </div>
 
+
+<!-- Call Modal -->
+<div class="call-modal-overlay" id="callModalOverlay">
+  <div class="call-modal">
+    <button class="call-modal-close" onclick="closeCallModal()">&times;</button>
+    <div class="call-modal-avatar call-pulse" id="callModalAvatar">T</div>
+    <h3 class="call-modal-name" id="callModalName">Technician Name</h3>
+    <p class="call-modal-role" id="callModalRole">Technician</p>
+    <div class="call-modal-phone" id="callModalPhone">9876543210</div>
+    <div class="call-modal-actions">
+      <a class="call-modal-call-btn" id="callModalCallBtn" href="tel:">
+        📞 Call Now
+      </a>
+      <button class="call-modal-copy-btn" id="callModalCopyBtn" onclick="copyPhoneNumber()">
+        📋 Copy Number
+      </button>
+    </div>
+  </div>
+</div>
+
 <script src="script.js"></script>
 </body>
 </html>
