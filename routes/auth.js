@@ -6,18 +6,18 @@ const bcrypt = require("bcrypt");
 
 router.post("/register", async (req, res) => {
 
-  const { name, email, phone, password, role } = req.body;
+  const { name, email, phone, address, password, role } = req.body;
 
   try {
 
     const hashpass = await bcrypt.hash(password, 10);
 
     const sql = `
-      INSERT INTO users (name, email, phone, password, role)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO users (name, email, phone, address, password, role)
+      VALUES (?, ?, ?, ?, ?, ?)
     `;
 
-    db.query(sql, [name, email, phone, hashpass, role], (err, result) => {
+    db.query(sql, [name, email, phone, address, hashpass, role], (err, result) => {
 
       if (err) {
 
@@ -32,9 +32,25 @@ router.post("/register", async (req, res) => {
         });
       }
 
-      res.json({
-        message: "User registered successfully"
-      });
+      if (role === 'technician') {
+        const techSql = `
+          INSERT INTO technicians (name, phone, address, category, status)
+          VALUES (?, ?, ?, 'General', 'Available')
+        `;
+        db.query(techSql, [name, phone, address], (techErr) => {
+          if (techErr) {
+            console.error("Error inserting into technicians:", techErr);
+            // We can still return success for user registration, or a partial error
+          }
+          return res.json({
+            message: "Technician registered successfully"
+          });
+        });
+      } else {
+        res.json({
+          message: "User registered successfully"
+        });
+      }
 
     });
 
@@ -78,6 +94,7 @@ router.post("/login", (req, res) => {
         id: user.id,
         name: user.name,
         phone: user.phone,
+        address: user.address,
         role: user.role
       });
 

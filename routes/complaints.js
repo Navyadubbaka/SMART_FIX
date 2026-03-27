@@ -33,9 +33,11 @@ router.get("/", (req, res) => {
   let sql =`SELECT complaints.*, 
        technicians.name AS technician_name,
        technicians.phone AS technician_phone,
+       technicians.address AS technician_address,
        technicians.status AS technician_status,
        users.name AS user_name,
-       users.phone AS user_phone
+       users.phone AS user_phone,
+       users.address AS user_address
 FROM complaints
 LEFT JOIN technicians 
 ON complaints.technician_id = technicians.id
@@ -143,57 +145,93 @@ router.post("/", upload.single("image"), async (req, res) => {
 
     }
 
+    // Step 3: Get user's address for proximity matching
     db.query(
-      `
-      SELECT * FROM technicians
-      WHERE category = ?
-      AND status = 'Available'
-      ORDER BY RAND()
-      LIMIT 1
-      `,
-      [predictedCategory],
-      (err, tech) => {
+      "SELECT address FROM users WHERE id = ?",
+      [userId],
+      (err, userResult) => {
 
         if (err) {
           console.error(err);
           return res.status(500).json({ message: "Database Error" });
         }
 
-        const techId = tech.length > 0 ? tech[0].id : null;
-        const techName = tech.length > 0 ? tech[0].name : null;
+        const userAddress = userResult.length > 0 ? (userResult[0].address || "") : "";
+        const addressWords = userAddress.toLowerCase().split(/[,\s]+/).filter(w => w.length > 2);
 
-        db.query(
-          `
-          INSERT INTO complaints 
-          (issue, category, image, technician_id, status, user_id)
-          VALUES (?, ?, ?, ?, 'Pending', ?)
-          `,
-          [issue, predictedCategory, image, techId, userId],
-          (err) => {
+        // Build proximity SQL: prefer technicians whose address shares words with user's address
+        let techSql = `
+          SELECT *, (
+        `;
 
-            if (err) {
-              console.error(err);
-              return res.status(500).json({ message: "Insert Error" });
-            }
+        if (addressWords.length > 0) {
+          const matchClauses = addressWords.map(() => 
+            `(LOWER(address) LIKE ?)`
+          );
+          techSql += matchClauses.join(" + ");
+        } else {
+          techSql += `0`;
+        }
 
+        techSql += `
+          ) AS address_match_score
+          FROM technicians
+          WHERE category = ?
+          AND status = 'Available'
+          ORDER BY address_match_score DESC, RAND()
+          LIMIT 1
+        `;
 
-            if (techId) {
+        const params = [
+          ...addressWords.map(w => `%${w}%`),
+          predictedCategory
+        ];
 
-              db.query(
-                "UPDATE technicians SET status='Busy' WHERE id=?",
-                [techId]
-              );
+        db.query(techSql, params, (err, tech) => {
 
-            }
-
-            res.json({
-              message: "Complaint Submitted Successfully",
-              category: predictedCategory,
-              assignedTo: techName || "No technician available"
-            });
-
+          if (err) {
+            console.error(err);
+            return res.status(500).json({ message: "Database Error" });
           }
-        );
+
+          const techId = tech.length > 0 ? tech[0].id : null;
+          const techName = tech.length > 0 ? tech[0].name : null;
+          const matchScore = tech.length > 0 ? tech[0].address_match_score : 0;
+
+          console.log(`Assigned Technician: ${techName}, Match Score: ${matchScore}`);
+
+          db.query(
+            `
+            INSERT INTO complaints 
+            (issue, category, image, technician_id, status, user_id)
+            VALUES (?, ?, ?, ?, 'Pending', ?)
+            `,
+            [issue, predictedCategory, image, techId, userId],
+            (err) => {
+
+              if (err) {
+                console.error(err);
+                return res.status(500).json({ message: "Insert Error" });
+              }
+
+              if (techId) {
+                db.query(
+                  "UPDATE technicians SET status='Busy' WHERE id=?",
+                  [techId]
+                );
+              }
+
+              res.json({
+                message: "Complaint Submitted Successfully",
+                category: predictedCategory,
+                assignedTo: techName || "No technician available",
+                proximityMatch: matchScore > 0 ? "Nearby technician assigned!" : "Random assignment"
+              });
+
+            }
+          );
+
+        });
 
       }
     );
