@@ -75,6 +75,7 @@ async function loadTechnicians() {
           <strong>${t.name}</strong><br>
           Category: ${t.category}<br>
           Phone: ${t.phone || "N/A"}<br>
+          📍 Address: ${t.address || "N/A"}<br>
           Status: <strong>${t.status}</strong>
         </div>
       `;
@@ -120,6 +121,7 @@ async function loadComplaints() {
 
           ${currentUser.role === "technician" ? `
             <strong>User:</strong> ${c.user_name || "Unknown"} <br>
+            📍 <strong>User Address:</strong> ${c.user_address || "N/A"} <br>
 
             ${
               c.user_phone
@@ -134,6 +136,7 @@ async function loadComplaints() {
           <strong>AI Category:</strong> ${c.category || "Detecting..."} <br>
 
           <strong>Technician:</strong> ${c.technician_name || "Not Assigned"} <br>
+          📍 <strong>Technician Address:</strong> ${c.technician_address || "N/A"} <br>
 
           ${currentUser.role !== "technician" ? `
 
