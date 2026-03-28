@@ -266,3 +266,141 @@ input:focus {
 .btn-delete:hover{
   background:#c0392b;
 }
+
+/* ===== CALL MODAL ===== */
+.call-modal-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.call-modal-overlay.active {
+  display: flex !important;
+}
+
+.call-modal {
+  background: #fff;
+  padding: 30px;
+  border-radius: 12px;
+  text-align: center;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+  position: relative;
+  width: 90%;
+  max-width: 350px;
+  animation: modalPop 0.3s ease-out;
+}
+
+@keyframes modalPop {
+  0% { transform: scale(0.9); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.call-modal-close {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #888;
+  transition: 0.2s;
+}
+
+.call-modal-close:hover {
+  color: #333;
+}
+
+.call-modal-avatar {
+  width: 70px;
+  height: 70px;
+  background: #4e73df;
+  color: #fff;
+  font-size: 32px;
+  font-weight: bold;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 0 auto 15px;
+}
+
+.call-pulse {
+  animation: pulseAvatar 2s infinite;
+}
+
+@keyframes pulseAvatar {
+  0% { box-shadow: 0 0 0 0 rgba(78, 115, 223, 0.4); }
+  70% { box-shadow: 0 0 0 15px rgba(78, 115, 223, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(78, 115, 223, 0); }
+}
+
+.call-modal-name {
+  margin: 0;
+  font-size: 22px;
+  color: #333;
+}
+
+.call-modal-role {
+  margin: 5px 0 15px;
+  color: #666;
+  font-size: 14px;
+}
+
+.call-modal-phone {
+  font-size: 24px;
+  font-weight: bold;
+  color: #4e73df;
+  margin-bottom: 25px;
+  letter-spacing: 1px;
+}
+
+.call-modal-actions {
+  display: flex;
+  gap: 15px;
+  justify-content: center;
+}
+
+.call-modal-call-btn,
+.call-modal-copy-btn {
+  flex: 1;
+  padding: 10px 15px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  text-decoration: none;
+  transition: 0.3s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: none;
+}
+
+.call-modal-call-btn {
+  background: #1cc88a;
+  color: #fff;
+}
+
+.call-modal-call-btn:hover {
+  background: #17a673;
+}
+
+.call-modal-copy-btn {
+  background: #f8f9fc;
+  color: #5a5c69;
+  border: 1px solid #d1d3e2;
+}
+
+.call-modal-copy-btn:hover {
+  background: #eaecf4;
+}
