@@ -4,8 +4,8 @@ const currentUser = JSON.parse(sessionStorage.getItem("user"));
 const currentPage = window.location.pathname;
 
 if (!currentUser &&
-    !currentPage.includes("login.html") && !currentPage.includes("index.html") &&
-    !currentPage.includes("register.html")) {
+  !currentPage.includes("login.html") && !currentPage.includes("index.html") &&
+  !currentPage.includes("register.html")) {
   window.location.href = "login.html";
 }
 
@@ -75,7 +75,7 @@ async function loadTechnicians() {
           <strong>${t.name}</strong><br>
           Category: ${t.category}<br>
           Phone: ${t.phone || "N/A"}<br>
-          📍 Address: ${t.address || "N/A"}<br>
+          Address: ${t.address || "N/A"}<br>
           Status: <strong>${t.status}</strong>
         </div>
       `;
@@ -121,13 +121,12 @@ async function loadComplaints() {
 
           ${currentUser.role === "technician" ? `
             <strong>User:</strong> ${c.user_name || "Unknown"} <br>
-            📍 <strong>User Address:</strong> ${c.user_address || "N/A"} <br>
+            <strong>User Address:</strong> ${c.user_address || "N/A"} <br>
 
-            ${
-              c.user_phone
-              ? `<button class="call-btn" onclick="openCallModal('${(c.user_name || 'User').replace(/'/g, "\\'") }', '${c.user_phone}', 'User')">📞 Call User</button><br>`
-              : `<strong>User Phone:</strong> N/A <br>`
-            }
+            ${c.user_phone
+            ? `<button class="call-btn" onclick="openCallModal('${(c.user_name || 'User').replace(/'/g, "\\'")}', '${c.user_phone}', 'User')">📞 Call User</button><br>`
+            : `<strong>User Phone:</strong> N/A <br>`
+          }
 
           ` : ""}
 
@@ -136,43 +135,39 @@ async function loadComplaints() {
           <strong>AI Category:</strong> ${c.category || "Detecting..."} <br>
 
           <strong>Technician:</strong> ${c.technician_name || "Not Assigned"} <br>
-          📍 <strong>Technician Address:</strong> ${c.technician_address || "N/A"} <br>
+          <strong>Technician Address:</strong> ${c.technician_address || "N/A"} <br>
 
           ${currentUser.role !== "technician" ? `
 
-            ${
-              c.technician_phone
-              ? `<button class="call-btn" onclick="openCallModal('${(c.technician_name || 'Technician').replace(/'/g, "\\'") }', '${c.technician_phone}', 'Technician')">📞 Call Technician</button><br>`
-              : `<strong>Technician Phone:</strong> N/A <br>`
-            }
+            ${c.technician_phone
+            ? `<button class="call-btn" onclick="openCallModal('${(c.technician_name || 'Technician').replace(/'/g, "\\'")}', '${c.technician_phone}', 'Technician')">📞 Call Technician</button><br>`
+            : `<strong>Technician Phone:</strong> N/A <br>`
+          }
 
           ` : ""}
 
           <div class="status ${statusClass}">${c.status}</div>
 
-          ${
-            c.image
-              ? `<img src="http://localhost:3000/uploads/${c.image}" 
+          ${c.image
+          ? `<img src="http://localhost:3000/uploads/${c.image}" 
                       width="100%" 
                       style="margin-top:10px;border-radius:6px;">`
-              : ""
-          }
+          : ""
+        }
 
-          ${
-            currentUser.role === "technician" && c.status === "Pending"
-              ? `<button class="btn-resolve" onclick="resolveComplaint(${c.id})">
+          ${currentUser.role === "technician" && c.status === "Pending"
+          ? `<button class="btn-resolve" onclick="resolveComplaint(${c.id})">
                    Mark Resolved
                  </button>`
-              : ""
-          }
+          : ""
+        }
 
-          ${
-            currentUser.role === "admin" && c.status === "Resolved"
-              ? `<button class="btn-delete" onclick="deleteComplaint(${c.id})">
+          ${currentUser.role === "admin" && c.status === "Resolved"
+          ? `<button class="btn-delete" onclick="deleteComplaint(${c.id})">
                    🗑 Delete
                  </button>`
-              : ""
-          }
+          : ""
+        }
 
         </div>
       `;
@@ -335,7 +330,7 @@ function copyPhoneNumber() {
 }
 
 // Close modal when clicking the backdrop
-document.addEventListener("click", function(e) {
+document.addEventListener("click", function (e) {
   if (e.target && e.target.id === "callModalOverlay") {
     closeCallModal();
   }
