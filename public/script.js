@@ -3,12 +3,16 @@ const API = "http://localhost:3000/api";
 const currentUser = JSON.parse(sessionStorage.getItem("user"));
 const currentPage = window.location.pathname;
 
+// Rating tracker — MUST be declared before loadComplaints() runs
+let selectedRatings = {};
+
 if (!currentUser &&
   !currentPage.includes("login.html") && !currentPage.includes("index.html") &&
   !currentPage.includes("register.html")) {
   window.location.href = "login.html";
 }
 
+// ===== LOGIN FORM =====
 const loginForm = document.getElementById("loginForm");
 
 if (loginForm) {
@@ -57,11 +61,13 @@ if (loginForm) {
   });
 }
 
+// ===== LOGOUT =====
 function logout() {
   sessionStorage.clear();
   window.location.href = "login.html";
 }
 
+// ===== LOAD TECHNICIANS (Admin) =====
 async function loadTechnicians() {
   try {
     const res = await fetch(API + "/technicians");
@@ -83,8 +89,6 @@ async function loadTechnicians() {
           Address: ${t.address || "N/A"}<br>
           ${t.experience ? `Experience: ${t.experience}<br>` : ""}
           Status: <strong class="${availClass}">${availDisplay}</strong>
-          Status: <strong>${t.status}</strong>
-
         </div>
       `;
     });
@@ -97,6 +101,7 @@ async function loadTechnicians() {
   }
 }
 
+// ===== TECH COUNT (Admin) =====
 async function loadTechnicianCount() {
   try {
     const res  = await fetch(API + "/technicians/count");
@@ -108,19 +113,18 @@ async function loadTechnicianCount() {
   }
 }
 
+// ===== LOAD COMPLAINTS =====
 async function loadComplaints() {
   if (!currentUser) return;
 
   try {
-
     // Build query params based on role
     let complaintsUrl = API + `/complaints?role=${currentUser.role}&user_id=${currentUser.id}`;
     if (currentUser.role === "technician" && currentUser.technician_id) {
       complaintsUrl += `&technician_id=${currentUser.technician_id}`;
     }
 
-    const res = await fetch(complaintsUrl
-    );
+    const res = await fetch(complaintsUrl);
     const data = await res.json();
 
     const complaintList = document.getElementById("complaintList");
@@ -132,9 +136,11 @@ async function loadComplaints() {
     let resolved = 0;
 
     data.forEach(c => {
-      if(c.rating) {
-  selectedRatings[c.id] = c.rating;
-}
+      // Pre-fill star rating if already rated
+      if (c.rating) {
+        selectedRatings[c.id] = Number(c.rating);
+      }
+
       total++;
       if (c.status === "Pending") pending++;
       if (c.status === "Resolved") resolved++;
@@ -161,7 +167,7 @@ async function loadComplaints() {
           <strong>AI Category:</strong> ${c.category || "Detecting..."} <br>
 
           <strong>Technician:</strong> 
-${c.technician_name || "Not Assigned"} ⭐ ${c.rating ? c.rating.toFixed(1) : 0} <br>
+${c.technician_name || "Not Assigned"} ⭐ ${c.rating ? Number(c.rating).toFixed(1) : "0.0"} <br>
           <strong>Technician Address:</strong> ${c.technician_address || "N/A"} <br>
 
           ${currentUser.role !== "technician" ? `
@@ -174,11 +180,12 @@ ${c.technician_name || "Not Assigned"} ⭐ ${c.rating ? c.rating.toFixed(1) : 0}
           ` : ""}
 
           <div class="status ${statusClass}">${c.status}</div>
+
          ${currentUser.role === "user" && c.status === "Resolved" ? `
   <div class="rating-box">
    <div class="stars" id="stars-${c.id}">
   ${[1,2,3,4,5].map(i => `
-    <span onclick="setRating(${c.id},${i})" class="${c.rating && i <= c.rating ? 'active' : ''}">⭐</span>
+    <span onclick="setRating(${c.id},${i})" class="${c.rating && i <= Number(c.rating) ? 'active' : ''}">⭐</span>
   `).join('')}
 </div>
 
@@ -217,7 +224,6 @@ ${c.technician_name || "Not Assigned"} ⭐ ${c.rating ? c.rating.toFixed(1) : 0}
     complaintList.innerHTML = html || "<p>No complaints found.</p>";
 
     if (currentUser.role === "admin") {
-
       const totalEl = document.getElementById("totalComplaints");
       const pendingEl = document.getElementById("pendingComplaints");
       const resolvedEl = document.getElementById("resolvedComplaints");
@@ -228,9 +234,7 @@ ${c.technician_name || "Not Assigned"} ⭐ ${c.rating ? c.rating.toFixed(1) : 0}
     }
 
   } catch (error) {
-
     console.error("Error loading complaints:", error);
-
     const complaintList = document.getElementById("complaintList");
     if (complaintList) {
       complaintList.innerHTML =
@@ -239,103 +243,77 @@ ${c.technician_name || "Not Assigned"} ⭐ ${c.rating ? c.rating.toFixed(1) : 0}
   }
 }
 
+// ===== SUBMIT COMPLAINT =====
 const complaintForm = document.getElementById("complaintForm");
 
 if (complaintForm) {
   complaintForm.addEventListener("submit", async function (e) {
-
     e.preventDefault();
 
     const formData = new FormData();
     formData.append("user_id", currentUser.id);
     formData.append("issue", document.getElementById("issue").value);
 
-    const imageFile = document.getElementById("image").files[0];
+    const imageInput = document.getElementById("image");
+    const imageFile = imageInput && imageInput.files[0];
+    const issueText = document.getElementById("issue").value.trim();
 
-    if (!imageFile) {
-      alert("Please upload an image.");
+    // Either text or image must be provided
+    if (!issueText && !imageFile) {
+      alert("Please describe the issue or upload an image.");
       return;
     }
 
-    formData.append("image", imageFile);
+    if (imageFile) {
+      formData.append("image", imageFile);
+    }
 
     try {
-
-      await fetch(API + "/complaints", {
+      const res = await fetch(API + "/complaints", {
         method: "POST",
         body: formData
       });
 
-      alert("Complaint Submitted. AI is assigning technician...");
+      const data = await res.json();
+      alert("✅ " + data.message + (data.assignedTo ? `\nAssigned to: ${data.assignedTo}` : ""));
       complaintForm.reset();
       loadComplaints();
 
     } catch (error) {
-
       alert("Error submitting complaint");
       console.error(error);
-
     }
-
   });
 }
 
-// async function resolveComplaint(id) {
-//   try {
-
-//     await fetch(API + "/complaints/resolve/" + id, {
-//       method: "PUT"
-//     });
-
-//     loadComplaints();
-
-//   } catch (error) {
-
-//     console.error("Error resolving complaint:", error);
-
-//   }
-// }
+// ===== RESOLVE COMPLAINT =====
 async function resolveComplaint(id) {
   try {
-
     await fetch(API + "/complaints/resolve/" + id, {
       method: "PUT",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        technician_id: currentUser.id  
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ technician_id: currentUser.id })
     });
-
     loadComplaints();
-
   } catch (error) {
     console.error("Error resolving complaint:", error);
   }
 }
 
+// ===== DELETE COMPLAINT =====
 async function deleteComplaint(id) {
-
   const confirmDelete = confirm("Delete this resolved complaint?");
-
   if (!confirmDelete) return;
 
   try {
-
-    await fetch(API + "/complaints/" + id, {
-      method: "DELETE"
-    });
-
+    await fetch(API + "/complaints/" + id, { method: "DELETE" });
     loadComplaints();
-
   } catch (error) {
-
     console.error("Error deleting complaint:", error);
-
   }
 }
 
+// ===== AUTO-LOAD ON PAGE =====
 if (currentPage.includes("admin")) {
   loadTechnicians();
   loadTechnicianCount();
@@ -351,7 +329,6 @@ if (currentPage.includes("technician")) {
 }
 
 // ===== CALL MODAL FUNCTIONS =====
-
 function openCallModal(name, phone, role) {
   const overlay = document.getElementById("callModalOverlay");
   if (!overlay) return;
@@ -364,7 +341,6 @@ function openCallModal(name, phone, role) {
   document.getElementById("callModalPhone").textContent = phone;
   document.getElementById("callModalCallBtn").href = "tel:" + phone;
 
-  // Reset copy button
   const copyBtn = document.getElementById("callModalCopyBtn");
   copyBtn.classList.remove("copied");
   copyBtn.innerHTML = "📋 Copy Number";
@@ -390,48 +366,39 @@ function copyPhoneNumber() {
   });
 }
 
-// Close modal when clicking the backdrop
+// Close modal on backdrop click
 document.addEventListener("click", function (e) {
   if (e.target && e.target.id === "callModalOverlay") {
     closeCallModal();
   }
 });
 
-let selectedRatings = {};
+// ===== RATING FUNCTIONS =====
 function setRating(complaintId, rating) {
-  // Update selected rating
   selectedRatings[complaintId] = rating;
 
-  // Update star visuals
   const stars = document.querySelectorAll(`#stars-${complaintId} span`);
   stars.forEach((star, index) => {
     star.classList.toggle("active", index < rating);
   });
 }
-async function submitRating(technicianId, complaintId) {
 
+async function submitRating(technicianId, complaintId) {
   const rating = selectedRatings[complaintId];
 
   if (!rating) {
-    alert("Please select rating!");
+    alert("Please select a rating!");
     return;
   }
 
   try {
-
     await fetch(API + "/complaints/rate", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        technician_id: technicianId,
-        rating: rating
-      })
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ technician_id: technicianId, rating: rating })
     });
 
     alert("⭐ Rating submitted successfully!");
-
     loadComplaints();
 
   } catch (error) {
