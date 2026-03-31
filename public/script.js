@@ -70,12 +70,19 @@ async function loadTechnicians() {
     let html = "";
 
     data.forEach(t => {
+      const skillDisplay = t.skills || t.category || "N/A";
+      const availDisplay = t.availability || t.status || "Unknown";
+      const availClass   = availDisplay === "Available" ? "avail-yes" : "avail-no";
+
       html += `
         <div class="card">
           <strong>${t.name}</strong><br>
-          Category: ${t.category}<br>
+          <span style="font-size:12px;color:#888;">Skills:</span>
+          <span style="font-size:13px;color:#4e73df;font-weight:600;">${skillDisplay}</span><br>
           Phone: ${t.phone || "N/A"}<br>
           Address: ${t.address || "N/A"}<br>
+          ${t.experience ? `Experience: ${t.experience}<br>` : ""}
+          Status: <strong class="${availClass}">${availDisplay}</strong>
           Status: <strong>${t.status}</strong>
 
         </div>
@@ -83,10 +90,21 @@ async function loadTechnicians() {
     });
 
     const techList = document.getElementById("techList");
-    if (techList) techList.innerHTML = html;
+    if (techList) techList.innerHTML = html || "<p>No technicians found.</p>";
 
   } catch (error) {
     console.error("Error loading technicians:", error);
+  }
+}
+
+async function loadTechnicianCount() {
+  try {
+    const res  = await fetch(API + "/technicians/count");
+    const data = await res.json();
+    const el   = document.getElementById("totalTechnicians");
+    if (el) el.textContent = data.total;
+  } catch (err) {
+    console.error("Error loading tech count:", err);
   }
 }
 
@@ -95,8 +113,13 @@ async function loadComplaints() {
 
   try {
 
-    const res = await fetch(
-      API + `/complaints?role=${currentUser.role}&user_id=${currentUser.id}`
+    // Build query params based on role
+    let complaintsUrl = API + `/complaints?role=${currentUser.role}&user_id=${currentUser.id}`;
+    if (currentUser.role === "technician" && currentUser.technician_id) {
+      complaintsUrl += `&technician_id=${currentUser.technician_id}`;
+    }
+
+    const res = await fetch(complaintsUrl
     );
     const data = await res.json();
 
@@ -315,6 +338,7 @@ async function deleteComplaint(id) {
 
 if (currentPage.includes("admin")) {
   loadTechnicians();
+  loadTechnicianCount();
   loadComplaints();
 }
 

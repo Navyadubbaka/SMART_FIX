@@ -1,126 +1,255 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SmartFix | Create Account</title>
+  <meta name="description" content="Register on SmartFix — the AI-powered home service platform.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="register.css">
 </head>
+
 <body>
 
-<div class="auth-wrapper">
-  <div class="auth-card">
+  <div class="auth-wrapper">
+    <div class="auth-card">
 
-    <h1 class="logo">SmartFix</h1>
-    <p class="subtitle">Create your account</p>
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <h1 class="logo">SmartFix</h1>
+      </div>
+      <p class="subtitle">Create your account to get started</p>
 
-    <form id="registerForm">
+      <form id="registerForm" novalidate>
 
-      <div class="form-group">
-        <label>Full Name</label>
-        <input type="text" id="name" placeholder="Enter your full name" required>
+        <!-- Full Name -->
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" placeholder="Enter your full name" required>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" placeholder="Enter your email" required>
+        </div>
+
+        <!-- Phone -->
+        <div class="form-group">
+          <label for="phone">Phone Number</label>
+          <input type="tel" id="phone" placeholder="10-digit mobile number" pattern="[0-9]{10}" required>
+        </div>
+
+        <!-- Address -->
+        <div class="form-group">
+          <label for="address">Address</label>
+          <input type="text" id="address" placeholder="e.g. Ameerpet, Hyderabad" required>
+        </div>
+
+        <!-- Password -->
+        <div class="form-group">
+          <label for="password">Password</label>
+          <div class="password-wrap">
+            <input type="password" id="password" placeholder="Create a strong password" required>
+            <button type="button" class="toggle-pw" onclick="togglePassword()" title="Show/Hide">👁</button>
+          </div>
+        </div>
+
+        <!-- Role -->
+        <div class="form-group">
+          <label for="role">Select Role</label>
+          <select id="role" required onchange="onRoleChange(this.value)">
+            <option value="">— Choose Role —</option>
+            <option value="user">👤 User</option>
+            <option value="technician">🔧 Technician</option>
+            <option value="admin">🛡 Admin</option>
+          </select>
+        </div>
+
+        <!-- ═══════════════════════════════════════════════
+           TECHNICIAN EXTRA FIELDS (hidden by default)
+      ════════════════════════════════════════════════ -->
+        <div id="techFields" class="tech-section" aria-hidden="true">
+
+          <div class="tech-divider">
+            <span>Technician Profile</span>
+          </div>
+
+          <!-- Skills -->
+          <div class="form-group">
+            <label for="skills">Your Skills <span class="required-star">*</span></label>
+            <p class="field-hint">Select all categories you can handle</p>
+            <div class="skills-grid" id="skillsGrid">
+              <!-- Populated by JS -->
+            </div>
+            <input type="hidden" id="skillsHidden">
+          </div>
+
+          <!-- Experience -->
+          <div class="form-group">
+            <label for="experience">Years of Experience <span class="optional-tag">(optional)</span></label>
+            <select id="experience">
+              <option value="">Select experience</option>
+              <option value="Less than 1 year">Less than 1 year</option>
+              <option value="1-2 years">1–2 years</option>
+              <option value="3-5 years">3–5 years</option>
+              <option value="5-10 years">5–10 years</option>
+              <option value="10+ years">10+ years</option>
+            </select>
+          </div>
+
+        </div>
+        <!-- END technician fields -->
+
+        <button type="submit" class="btn-primary" id="submitBtn">
+          <span id="btnText">Create Account</span>
+          <span id="btnLoader" class="btn-loader" style="display:none">⏳</span>
+        </button>
+
+        <p id="message" class="message" role="alert"></p>
+
+      </form>
+
+      <div class="footer-text">
+        Already have an account? <a href="index.html">Login</a>
       </div>
 
-      <div class="form-group">
-        <label>Email Address</label>
-        <input type="email" id="email" placeholder="Enter your email" required>
-      </div>
-
-      <!-- NEW PHONE FIELD -->
-      <div class="form-group">
-        <label>Phone Number</label>
-        <input type="tel" id="phone" placeholder="Enter your phone number" required>
-      </div>
-
-      <!-- ADDRESS FIELD -->
-      <div class="form-group">
-        <label>Address</label>
-        <input type="text" id="address" placeholder="e.g. Ameerpet, Hyderabad, 500016" required>
-      </div>
-
-      <div class="form-group">
-        <label>Password</label>
-        <input type="password" id="password" placeholder="Create a password" required>
-      </div>
-
-      <div class="form-group">
-        <label>Select Role</label>
-        <select id="role" required>
-          <option value="">Choose Role</option>
-          <option value="user">User</option>
-          <option value="technician">Technician</option>
-          <option value="admin">Admin</option>
-        </select>
-      </div>
-
-      <button type="submit" class="btn-primary">Create Account</button>
-
-      <p id="message" class="message"></p>
-
-    </form>
-
-    <div class="footer-text">
-      Already have an account? <a href="index.html">Login</a>
     </div>
-
   </div>
-</div>
 
-<script>
-document.addEventListener("DOMContentLoaded", function () {
+  <script>
+    // ─── All 25 service categories ───────────────────────────────
+    const ALL_SKILLS = [
+      "Plumbing", "Electrical", "Carpentry", "AC", "Appliance",
+      "Refrigerator", "Washing Machine", "Microwave", "Geyser",
+      "Cleaning", "Painting", "Drainage", "Leak", "Furniture",
+      "Door", "Window", "Interior", "CCTV", "Inverter",
+      "Generator", "Roofing", "Wall Repair", "Waterproofing",
+      "Pest Control", "Gardening"
+    ];
 
-  const API = "http://localhost:3000/api";
-  const form = document.getElementById("registerForm");
-  const message = document.getElementById("message");
-
-  form.addEventListener("submit", async function (e) {
-    e.preventDefault();
-
-    const name = document.getElementById("name").value;
-    const email = document.getElementById("email").value;
-
-    // NEW PHONE VARIABLE
-    const phone = document.getElementById("phone").value;
-    const address = document.getElementById("address").value;
-
-    const password = document.getElementById("password").value;
-    const role = document.getElementById("role").value;
-
-    try {
-      const response = await fetch(API + "/auth/register", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ name, email, phone, address, password, role })
+    // ─── Build skill chip grid ────────────────────────────────────
+    function buildSkillsGrid() {
+      const grid = document.getElementById("skillsGrid");
+      ALL_SKILLS.forEach(skill => {
+        const chip = document.createElement("label");
+        chip.className = "skill-chip";
+        // chip.innerHTML = `
+        //   <input type="checkbox" value="${skill}" onchange="updateHiddenSkills()">
+        //   <span>${skill}</span>
+        // `;
+        chip.innerHTML = `
+  <input type="checkbox" name="skills" value="${skill}" onchange="updateHiddenSkills()">
+  <span>${skill}</span>
+`;
+        grid.appendChild(chip);
       });
+    }
+    buildSkillsGrid();
 
-      const data = await response.json();
+    // ─── Sync checkboxes → hidden field ──────────────────────────
+    function updateHiddenSkills() {
+      const checked = [...document.querySelectorAll('#skillsGrid input:checked')]
+        .map(cb => cb.value);
+      document.getElementById("skillsHidden").value = checked.join(",");
+    }
 
-      if (response.ok) {
-        message.style.color = "green";
-        message.textContent = "Account created successfully! Redirecting...";
-
-        setTimeout(() => {
-          window.location.href = "login.html";
-        }, 1500);
-
-        form.reset();
-
+    // ─── Show / hide technician fields on role change ────────────
+    function onRoleChange(role) {
+      const section = document.getElementById("techFields");
+      const btnText = document.getElementById("btnText");
+      if (role === "technician") {
+        section.classList.add("visible");
+        section.setAttribute("aria-hidden", "false");
+        if (btnText) btnText.textContent = "Register as Technician";
       } else {
-        message.style.color = "red";
-        message.textContent = data.message || "Registration failed.";
+        section.classList.remove("visible");
+        section.setAttribute("aria-hidden", "true");
+        if (btnText) btnText.textContent = "Create Account";
+      }
+    }
+
+    // ─── Password toggle ─────────────────────────────────────────
+    function togglePassword() {
+      const pw = document.getElementById("password");
+      pw.type = pw.type === "password" ? "text" : "password";
+    }
+
+    // ─── Form submit ─────────────────────────────────────────────
+    document.getElementById("registerForm").addEventListener("submit", async function (e) {
+      e.preventDefault();
+
+      const message = document.getElementById("message");
+      const btnText = document.getElementById("btnText");
+      const btnLoader = document.getElementById("btnLoader");
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const phone = document.getElementById("phone").value.trim();
+      const address = document.getElementById("address").value.trim();
+      const password = document.getElementById("password").value;
+      const role = document.getElementById("role").value;
+      const skills = document.getElementById("skillsHidden").value;
+      const experience = document.getElementById("experience").value;
+
+      // Validation
+      if (!name || !email || !password || !role) {
+        message.style.color = "#e74c3c";
+        message.textContent = "Please fill all required fields.";
+        return;
       }
 
-    } catch (error) {
-      message.style.color = "red";
-      message.textContent = "Server error. Please try again.";
-      console.error(error);
-    }
-  });
+      if (role === "technician" && !skills) {
+        message.style.color = "#e74c3c";
+        message.textContent = "Please select at least one skill.";
+        return;
+      }
 
-});
-</script>
+      // Loading state
+      btnText.textContent = "Creating account...";
+      btnLoader.style.display = "inline";
+      message.textContent = "";
+
+      try {
+        const payload = { name, email, phone, address, password, role };
+        if (role === "technician") {
+          payload.skills = skills;
+          payload.experience = experience;
+        }
+
+        const res = await fetch("http://localhost:3000/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+
+        if (res.ok || res.status === 200) {
+          message.style.color = "#1cc88a";
+          message.textContent = "✅ " + data.message + " Redirecting to login...";
+          this.reset();
+          document.getElementById("techFields").classList.remove("visible");
+          setTimeout(() => { window.location.href = "index.html"; }, 1800);
+        } else {
+          message.style.color = "#e74c3c";
+          message.textContent = "❌ " + (data.message || "Registration failed.");
+        }
+
+      } catch (err) {
+        message.style.color = "#e74c3c";
+        message.textContent = "Server error. Please try again.";
+        console.error(err);
+      } finally {
+        const currentRole = document.getElementById("role").value;
+        btnText.textContent = currentRole === "technician" ? "Register as Technician" : "Create Account";
+        btnLoader.style.display = "none";
+      }
+    });
+  </script>
 
 </body>
+
 </html>

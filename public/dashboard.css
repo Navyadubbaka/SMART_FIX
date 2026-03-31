@@ -267,6 +267,17 @@ input:focus {
   background:#c0392b;
 }
 
+/* ===== AVAILABILITY BADGES ===== */
+.avail-yes {
+  color: #1cc88a;
+  font-weight: 700;
+}
+
+.avail-no {
+  color: #e74a3b;
+  font-weight: 700;
+}
+
 /* ===== CALL MODAL ===== */
 .call-modal-overlay {
   display: none;
