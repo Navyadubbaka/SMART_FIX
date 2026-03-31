@@ -9,7 +9,6 @@ const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "uploads/");
   },
-
   filename: function (req, file, cb) {
     cb(null, Date.now() + "-" + file.originalname);
   }
@@ -17,58 +16,38 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+
+// ============================================================
+// GET ALL COMPLAINTS
+// ============================================================
 router.get("/", (req, res) => {
 
-  const role         = req.query.role;
-  const userId       = req.query.user_id;
+  const role = req.query.role;
+  const userId = req.query.user_id;
   const technicianId = req.query.technician_id;
 
   let sql = `
-    SELECT complaints.*,
-           technicians.name    AS technician_name,
-           technicians.phone   AS technician_phone,
+    SELECT complaints.*, 
+           technicians.name AS technician_name,
+           technicians.rating AS rating,
+           technicians.phone AS technician_phone,
            technicians.address AS technician_address,
-           technicians.status  AS technician_status,
-           users.name    AS user_name,
-           users.phone   AS user_phone,
+           technicians.status AS technician_status,
+           users.name AS user_name,
+           users.phone AS user_phone,
            users.address AS user_address
     FROM complaints
-    LEFT JOIN technicians ON complaints.technician_id = technicians.id
-    LEFT JOIN users       ON complaints.user_id       = users.id
+    LEFT JOIN technicians 
+      ON complaints.technician_id = technicians.id
+    LEFT JOIN users
+      ON complaints.user_id = users.id
   `;
-  const role = req.query.role;
-  const userId = req.query.user_id;
-
-  // let sql = `
-  //   SELECT complaints.*, 
-  //          technicians.name AS technician_name,
-  //          technicians.status AS technician_status
-  //   FROM complaints
-  //   LEFT JOIN technicians 
-  //     ON complaints.technician_id = technicians.id
-  // `;
-  let sql =`SELECT complaints.*, 
-       technicians.name AS technician_name,
-       technicians.rating AS rating,
-       technicians.phone AS technician_phone,
-       technicians.address AS technician_address,
-       technicians.status AS technician_status,
-       users.name AS user_name,
-       users.phone AS user_phone,
-       users.address AS user_address
-FROM complaints
-LEFT JOIN technicians 
-ON complaints.technician_id = technicians.id
-LEFT JOIN users
-ON complaints.user_id = users.id`;
 
   if (role === "user") {
     sql += ` WHERE complaints.user_id = ${db.escape(userId)}`;
   } else if (role === "technician" && technicianId) {
-    // Technician sees only complaints assigned to them
     sql += ` WHERE complaints.technician_id = ${db.escape(technicianId)}`;
   }
-  // admin: no filter — sees all complaints
 
   sql += " ORDER BY complaints.id DESC";
 
@@ -81,6 +60,10 @@ ON complaints.user_id = users.id`;
   });
 });
 
+
+// ============================================================
+// SUBMIT NEW COMPLAINT (with AI category + technician assignment)
+// ============================================================
 router.post("/", upload.single("image"), async (req, res) => {
 
   try {
@@ -98,11 +81,10 @@ router.post("/", upload.single("image"), async (req, res) => {
     let predictedCategory = "General";
     let textCategory = null;
 
-    // Step 1: Always check text keywords first (if issue text is provided)
+    // Step 1: Check text keywords first
     if (issue) {
       const text = issue.toLowerCase();
 
-      // ── AC ──────────────────────────────────────────────────────
       if (
         text.includes("ac") ||
         text.includes("air conditioner") ||
@@ -113,8 +95,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "AC";
       }
-
-      // ── Washing Machine ─────────────────────────────────────────
       else if (
         text.includes("washing machine") ||
         text.includes("washer") ||
@@ -124,8 +104,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Washing Machine";
       }
-
-      // ── Refrigerator ────────────────────────────────────────────
       else if (
         text.includes("fridge") ||
         text.includes("refrigerator") ||
@@ -135,8 +113,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Refrigerator";
       }
-
-      // ── Microwave ───────────────────────────────────────────────
       else if (
         text.includes("microwave") ||
         text.includes("oven") ||
@@ -144,8 +120,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Microwave";
       }
-
-      // ── Geyser ──────────────────────────────────────────────────
       else if (
         text.includes("geyser") ||
         text.includes("water heater") ||
@@ -154,8 +128,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Geyser";
       }
-
-      // ── Drainage ────────────────────────────────────────────────
       else if (
         text.includes("drain") ||
         text.includes("drainage") ||
@@ -166,8 +138,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Drainage";
       }
-
-      // ── Leak ────────────────────────────────────────────────────
       else if (
         text.includes("leak") ||
         text.includes("leakage") ||
@@ -177,8 +147,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Leak";
       }
-
-      // ── Plumbing ────────────────────────────────────────────────
       else if (
         text.includes("pipe") ||
         text.includes("water") ||
@@ -191,8 +159,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Plumbing";
       }
-
-      // ── Electrical ──────────────────────────────────────────────
       else if (
         text.includes("light") ||
         text.includes("wire") ||
@@ -209,8 +175,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Electrical";
       }
-
-      // ── Inverter ────────────────────────────────────────────────
       else if (
         text.includes("inverter") ||
         text.includes("ups") ||
@@ -219,8 +183,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Inverter";
       }
-
-      // ── Generator ───────────────────────────────────────────────
       else if (
         text.includes("generator") ||
         text.includes("genset") ||
@@ -228,8 +190,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Generator";
       }
-
-      // ── CCTV ────────────────────────────────────────────────────
       else if (
         text.includes("cctv") ||
         text.includes("camera") ||
@@ -240,8 +200,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "CCTV";
       }
-
-      // ── Appliance (general) ─────────────────────────────────────
       else if (
         text.includes("appliance") ||
         text.includes("tv") ||
@@ -253,8 +211,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Appliance";
       }
-
-      // ── Door ────────────────────────────────────────────────────
       else if (
         text.includes("door") ||
         text.includes("hinge") ||
@@ -264,8 +220,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Door";
       }
-
-      // ── Window ──────────────────────────────────────────────────
       else if (
         text.includes("window") ||
         text.includes("glass pane") ||
@@ -274,8 +228,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Window";
       }
-
-      // ── Furniture ───────────────────────────────────────────────
       else if (
         text.includes("furniture") ||
         text.includes("sofa") ||
@@ -288,8 +240,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Furniture";
       }
-
-      // ── Carpentry ───────────────────────────────────────────────
       else if (
         text.includes("wood") ||
         text.includes("carpentry") ||
@@ -299,8 +249,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Carpentry";
       }
-
-      // ── Painting ────────────────────────────────────────────────
       else if (
         text.includes("paint") ||
         text.includes("painting") ||
@@ -310,8 +258,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Painting";
       }
-
-      // ── Wall Repair ─────────────────────────────────────────────
       else if (
         text.includes("wall crack") ||
         text.includes("wall repair") ||
@@ -321,8 +267,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Wall Repair";
       }
-
-      // ── Waterproofing ───────────────────────────────────────────
       else if (
         text.includes("waterproof") ||
         text.includes("waterproofing") ||
@@ -332,8 +276,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Waterproofing";
       }
-
-      // ── Roofing ─────────────────────────────────────────────────
       else if (
         text.includes("roof") ||
         text.includes("roofing") ||
@@ -343,8 +285,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Roofing";
       }
-
-      // ── Interior ────────────────────────────────────────────────
       else if (
         text.includes("interior") ||
         text.includes("false ceiling") ||
@@ -354,8 +294,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Interior";
       }
-
-      // ── Cleaning ────────────────────────────────────────────────
       else if (
         text.includes("clean") ||
         text.includes("cleaning") ||
@@ -366,8 +304,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Cleaning";
       }
-
-      // ── Pest Control ────────────────────────────────────────────
       else if (
         text.includes("pest") ||
         text.includes("cockroach") ||
@@ -380,8 +316,6 @@ router.post("/", upload.single("image"), async (req, res) => {
       ) {
         textCategory = "Pest Control";
       }
-
-      // ── Gardening ───────────────────────────────────────────────
       else if (
         text.includes("garden") ||
         text.includes("plant") ||
@@ -394,27 +328,30 @@ router.post("/", upload.single("image"), async (req, res) => {
       }
     }
 
-    // Step 2: If text gave a clear category, use it; otherwise use AI image prediction
+    // Step 2: If text gave a clear category, use it; otherwise try AI image prediction
     if (textCategory) {
       predictedCategory = textCategory;
       console.log("Text-based Category:", predictedCategory);
     } else if (image) {
 
-      const imagePath = "uploads/" + image;
+      try {
+        const imagePath = "uploads/" + image;
 
-      const formData = new FormData();
-      formData.append("image", fs.createReadStream(imagePath));
+        const formData = new FormData();
+        formData.append("image", fs.createReadStream(imagePath));
 
-      const aiResponse = await axios.post(
-        "http://localhost:5001/predict",
-        formData,
-        { headers: formData.getHeaders() }
-      );
+        const aiResponse = await axios.post(
+          "http://localhost:5001/predict",
+          formData,
+          { headers: formData.getHeaders(), timeout: 10000 }
+        );
 
-      predictedCategory = aiResponse.data.category;
-
-      console.log("AI Predicted Category:", predictedCategory);
-
+        predictedCategory = aiResponse.data.category;
+        console.log("AI Predicted Category:", predictedCategory);
+      } catch (aiErr) {
+        console.log("AI server not available, using General category");
+        predictedCategory = "General";
+      }
     }
 
     // Step 3: Get user's address for proximity matching
@@ -431,8 +368,7 @@ router.post("/", upload.single("image"), async (req, res) => {
         const userAddress = userResult.length > 0 ? (userResult[0].address || "") : "";
         const addressWords = userAddress.toLowerCase().split(/[,\s]+/).filter(w => w.length > 2);
 
-        // Build proximity SQL: prefer technicians whose address shares words with user's address
-        // Supports BOTH legacy columns (category/status) and new columns (skills/availability)
+        // Build proximity SQL
         let techSql = `
           SELECT *, (
         `;
@@ -451,10 +387,7 @@ router.post("/", upload.single("image"), async (req, res) => {
           FROM technicians
           WHERE (category = ? OR skills LIKE ?)
             AND (status = 'Available' OR availability = 'Available')
-          ORDER BY address_match_score DESC, RAND()
-          WHERE category = ?
-          AND status = 'Available'
-          ORDER BY address_match_score DESC,rating DESC, RAND()
+          ORDER BY address_match_score DESC, rating DESC, RAND()
           LIMIT 1
         `;
 
@@ -516,10 +449,10 @@ router.post("/", upload.single("image"), async (req, res) => {
 
   } catch (error) {
 
-    console.error("AI Prediction Error:", error);
+    console.error("Error:", error);
 
     res.status(500).json({
-      message: "AI classification failed"
+      message: "Server error processing complaint"
     });
 
   }
@@ -527,6 +460,9 @@ router.post("/", upload.single("image"), async (req, res) => {
 });
 
 
+// ============================================================
+// RESOLVE COMPLAINT
+// ============================================================
 router.put("/resolve/:id", (req, res) => {
 
   const complaintId = req.params.id;
@@ -552,12 +488,10 @@ router.put("/resolve/:id", (req, res) => {
           }
 
           if (techId) {
-
             db.query(
               "UPDATE technicians SET status='Available', availability='Available' WHERE id=?",
               [techId]
             );
-
           }
 
           res.json({
@@ -572,13 +506,15 @@ router.put("/resolve/:id", (req, res) => {
 
 });
 
+
+// ============================================================
+// DELETE COMPLAINT
+// ============================================================
 router.delete("/:id", (req, res) => {
 
   const id = req.params.id;
 
-  const sql = "DELETE FROM complaints WHERE id = ?";
-
-  db.query(sql, [id], (err, result) => {
+  db.query("DELETE FROM complaints WHERE id = ?", [id], (err, result) => {
 
     if (err) {
       console.error("Delete error:", err);
@@ -595,6 +531,10 @@ router.delete("/:id", (req, res) => {
 
 });
 
+
+// ============================================================
+// RATE TECHNICIAN
+// ============================================================
 router.post("/rate", (req, res) => {
 
   const { technician_id, rating } = req.body;
@@ -613,12 +553,12 @@ router.post("/rate", (req, res) => {
         return res.status(500).json({ message: "Technician not found" });
       }
 
-      let currentRating = result[0].rating;
-      let totalRatings = result[0].total_ratings;
+      let currentRating = Number(result[0].rating) || 0;
+      let totalRatings = Number(result[0].total_ratings) || 0;
 
       // Step 2: Calculate new average
       let newTotal = totalRatings + 1;
-      let newRating = ((currentRating * totalRatings) + rating) / newTotal;
+      let newRating = ((currentRating * totalRatings) + Number(rating)) / newTotal;
 
       // Step 3: Update DB
       db.query(

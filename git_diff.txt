@@ -1,0 +1,692 @@
+﻿diff --git a/routes/auth.js b/routes/auth.js
+index a8844cf..e00a326 100644
+--- a/routes/auth.js
++++ b/routes/auth.js
+@@ -1,23 +1,281 @@
++// const express = require("express");
++// const router = express.Router();
++// const db = require("../db");
++// const bcrypt = require("bcrypt");
++
++// // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
++// //  REGISTER
++// //  - All roles go into `users`
++// //  - If role = technician ΓåÆ also inserted into `technicians`
++// //    with skills, category, availability, experience
++// // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
++// router.post("/register", async (req, res) => {
++
++//   const { name, email, phone, address, password, role, skills, experience } = req.body;
++
++//   // ΓöÇΓöÇ Basic validation ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++//   if (!name || !email || !password || !role) {
++//     return res.status(400).json({ message: "Name, email, password and role are required." });
++//   }
++
++//   if (role === "technician" && (!skills || skills.trim() === "")) {
++//     return res.status(400).json({ message: "Please select at least one skill." });
++//   }
++
++//   try {
++//     const hashpass = await bcrypt.hash(password, 10);
++
++//     // ΓöÇΓöÇ Step 1: Insert into users ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++//     const userSql = `
++//       INSERT INTO users (name, email, phone, address, password, role)
++//       VALUES (?, ?, ?, ?, ?, ?)
++//     `;
++
++//     db.query(
++//       userSql,
++//       [name, email, phone || null, address || null, hashpass, role],
++//       (userErr, userResult) => {
++
++//         if (userErr) {
++//           if (userErr.code === "ER_DUP_ENTRY") {
++//             return res.status(400).json({ message: "This email is already registered." });
++//           }
++//           console.error("User insert error:", userErr);
++//           return res.status(500).json({ message: "Database error creating user." });
++//         }
++
++//         // ΓöÇΓöÇ Step 2: If technician ΓåÆ insert profile ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++//         if (role === "technician") {
++
++//           const userId = userResult.insertId;
++//           const skillList = String(skills).trim();
++//           const primaryCategory = skillList.split(",")[0].trim();
++
++//           // Column order matches DB: user_id,name,phone,category,status,address,skills,availability,experience
++//           const techSql = `
++//             INSERT INTO technicians
++//               (user_id, name, phone, category, status, address, skills, availability, experience)
++//             VALUES (?, ?, ?, ?, 'Available', ?, ?, 'Available', ?)
++//           `;
++
++//           db.query(
++//             techSql,
++//             [
++//               userId,
++//               name,
++//               phone || null,
++//               primaryCategory,
++//               address || null,
++//               skillList,
++//               experience || null
++//             ],
++//             (techErr) => {
++//               if (techErr) {
++//                 console.error("Technician insert error:", techErr);
++//                 return res.status(500).json({
++//                   message: "Account created but technician profile failed: " + techErr.message
++//                 });
++//               }
++
++//               console.log(`\u2705 Technician registered: ${name} | Skills: ${skillList} | Category: ${primaryCategory}`);
++//               return res.status(200).json({
++//                 message: "Technician registered successfully! You can now log in."
++//               });
++//             }
++//           );
++
++//         } else {
++//           // Regular user or admin ΓÇö done
++//           console.log(`Γ£à ${role} registered: ${name}`);
++//           return res.status(200).json({ message: "Account created successfully!" });
++//         }
++//         // db.query(sql, [name, email, phone, address, hashpass, role], (err, result) => {
++
++//         //   if (err) {
++
++//         //     if (err.code === "ER_DUP_ENTRY") {
++//         //       return res.status(400).json({
++//         //         message: "Email already exists"
++//         //       });
++//         //     }
++
++//         //     return res.status(500).json({
++//         //       message: "Database error"
++//         //     });
++//         //   }
++
++//         //   if (role === 'technician') {
++//         //     const techSql = `
++//         //       INSERT INTO technicians (name, phone, address, category, status)
++//         //       VALUES (?, ?, ?, 'General', 'Available')
++//         //     `;
++//         //     db.query(techSql, [name, phone, address], (techErr) => {
++//         //       if (techErr) {
++//         //         console.error("Error inserting into technicians:", techErr);
++//         //         // We can still return success for user registration, or a partial error
++//         //       }
++//         //       return res.json({
++//         //         message: "Technician registered successfully"
++//         //       });
++//         //     });
++//         //   } else {
++//         //     res.json({
++//         //       message: "User registered successfully"
++//         //     });
++//         //   }
++
++//         // });
++//         db.query(sql, [name, email, phone, address, hashpass, role], (err, result) => {
++
++//           if (err) {
++
++//             if (err.code === "ER_DUP_ENTRY") {
++//               return res.status(400).json({ message: "Email already exists" });
++//             }
++
++//             return res.status(500).json({ message: "Database error" });
++//           }
++
++//           const userId = result.insertId;
++
++
++//           if (role === 'technician') {
++
++//             const techSql = `
++//       INSERT INTO technicians (name, phone, address, category, status, user_id)
++//       VALUES (?, ?, ?, 'General', 'Available', ?)
++//     `;
++
++//             db.query(techSql, [name, phone, address, userId], (techErr) => {
++
++//               if (techErr) {
++//                 console.error("Technician insert error:", techErr);
++//               }
++//             });
++
++//           } catch (err) {
++//             console.error("Registration error:", err);
++//             return res.status(500).json({ message: "Server error. Please try again." });
++//             return res.json({
++//               message: "Technician registered successfully"
++//             });
++//           });
++
++//       } else {
++
++//       res.json({
++//         message: "User registered successfully"
++//       });
++
++//     }
++
++// });
++
++//   } catch (error) {
++
++//   res.status(500).json({
++//     message: "Error hashing password"
++//   });
++
++// }
++
++// });
++
++
++// // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
++// //  LOGIN
++// //  - Technician login also fetches their skills + availability
++// //    from technicians table for complaint matching
++// // ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
++// router.post("/login", (req, res) => {
++
++//   const { email, password } = req.body;
++
++//   if (!email || !password) {
++//     return res.status(400).json({ message: "Email and password are required." });
++//   }
++
++//   db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
++
++//     if (err) return res.status(500).json({ message: "Database error." });
++
++//     if (results.length === 0) {
++//       return res.json({ message: "Invalid Credentials" });
++//     }
++
++//     const user = results[0];
++//     const match = await bcrypt.compare(password, user.password);
++
++//     if (!match) {
++//       return res.json({ message: "Invalid Credentials" });
++//     }
++
++//     // ΓöÇΓöÇ Technician: also fetch their skills profile ΓöÇΓöÇΓöÇΓöÇΓöÇ
++//     if (user.role === "technician") {
++
++//       db.query(
++//         `SELECT id, category, skills, status, availability, experience
++//          FROM technicians
++//          WHERE user_id = ?
++//          LIMIT 1`,
++//         [user.id],
++//         (techErr, techRows) => {
++
++//           if (techErr) console.error("Tech profile lookup error:", techErr);
++
++//           const tech = techRows && techRows.length > 0 ? techRows[0] : null;
++
++//           return res.json({
++//             id: user.id,
++//             name: user.name,
++//             phone: user.phone,
++//             address: user.address,
++//             role: user.role,
++//             technician_id: tech ? tech.id : null,
++//             skills: tech ? (tech.skills || tech.category || null) : null,
++//             availability: tech ? (tech.availability || tech.status || null) : null,
++//             experience: tech ? (tech.experience || null) : null,
++//           });
++//         }
++//       );
++
++//     } else {
++//       return res.json({
++//         id: user.id,
++//         name: user.name,
++//         phone: user.phone,
++//         address: user.address,
++//         role: user.role,
++//       });
++//     }
++
++//   });
++
++// });
++
++
++// module.exports = router;
++
++
++
+ const express = require("express");
+-const router  = express.Router();
+-const db      = require("../db");
+-const bcrypt  = require("bcrypt");
+-
+-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+-//  REGISTER
+-//  - All roles go into `users`
+-//  - If role = technician ΓåÆ also inserted into `technicians`
+-//    with skills, category, availability, experience
+-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+-router.post("/register", async (req, res) => {
++const router = express.Router();
++const db = require("../db");
++const bcrypt = require("bcrypt");
+ 
++
++// ============================================================
++// REGISTER
++// ============================================================
++router.post("/register", async (req, res) => {
+   const { name, email, phone, address, password, role, skills, experience } = req.body;
+ 
+-  // ΓöÇΓöÇ Basic validation ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++  // Basic validation
+   if (!name || !email || !password || !role) {
+     return res.status(400).json({ message: "Name, email, password and role are required." });
+   }
+ 
++  // Technician must have skills
+   if (role === "technician" && (!skills || skills.trim() === "")) {
+     return res.status(400).json({ message: "Please select at least one skill." });
+   }
+@@ -25,7 +283,7 @@ router.post("/register", async (req, res) => {
+   try {
+     const hashpass = await bcrypt.hash(password, 10);
+ 
+-    // ΓöÇΓöÇ Step 1: Insert into users ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++    // Step 1: Insert into users
+     const userSql = `
+       INSERT INTO users (name, email, phone, address, password, role)
+       VALUES (?, ?, ?, ?, ?, ?)
+@@ -44,14 +302,13 @@ router.post("/register", async (req, res) => {
+           return res.status(500).json({ message: "Database error creating user." });
+         }
+ 
+-        // ΓöÇΓöÇ Step 2: If technician ΓåÆ insert profile ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
++        // Step 2: If technician ΓåÆ insert into technicians table
+         if (role === "technician") {
+ 
+-          const userId          = userResult.insertId;
+-          const skillList       = String(skills).trim();
++          const userId = userResult.insertId;
++          const skillList = skills.trim(); // "Plumbing,Electrical"
+           const primaryCategory = skillList.split(",")[0].trim();
+ 
+-          // Column order matches DB: user_id,name,phone,category,status,address,skills,availability,experience
+           const techSql = `
+             INSERT INTO technicians
+               (user_id, name, phone, category, status, address, skills, availability, experience)
+@@ -63,130 +320,49 @@ router.post("/register", async (req, res) => {
+             [
+               userId,
+               name,
+-              phone           || null,
++              phone || null,
+               primaryCategory,
+-              address         || null,
++              address || null,
+               skillList,
+-              experience      || null
++              experience || null
+             ],
+             (techErr) => {
++
+               if (techErr) {
+                 console.error("Technician insert error:", techErr);
+                 return res.status(500).json({
+-                  message: "Account created but technician profile failed: " + techErr.message
++                  message: "Account created but technician profile failed."
+                 });
+               }
+ 
+-              console.log(`\u2705 Technician registered: ${name} | Skills: ${skillList} | Category: ${primaryCategory}`);
++              console.log(`Γ£à Technician registered: ${name} | Skills: ${skillList}`);
+               return res.status(200).json({
+-                message: "Technician registered successfully! You can now log in."
++                message: "Technician registered successfully!"
+               });
+             }
+           );
+ 
+         } else {
+-          // Regular user or admin ΓÇö done
+-          console.log(`Γ£à ${role} registered: ${name}`);
+-          return res.status(200).json({ message: "Account created successfully!" });
++          // Normal user / admin
++          return res.status(200).json({
++            message: "Account created successfully!"
++          });
+         }
+-    // db.query(sql, [name, email, phone, address, hashpass, role], (err, result) => {
+-
+-    //   if (err) {
+-
+-    //     if (err.code === "ER_DUP_ENTRY") {
+-    //       return res.status(400).json({
+-    //         message: "Email already exists"
+-    //       });
+-    //     }
+-
+-    //     return res.status(500).json({
+-    //       message: "Database error"
+-    //     });
+-    //   }
+-
+-    //   if (role === 'technician') {
+-    //     const techSql = `
+-    //       INSERT INTO technicians (name, phone, address, category, status)
+-    //       VALUES (?, ?, ?, 'General', 'Available')
+-    //     `;
+-    //     db.query(techSql, [name, phone, address], (techErr) => {
+-    //       if (techErr) {
+-    //         console.error("Error inserting into technicians:", techErr);
+-    //         // We can still return success for user registration, or a partial error
+-    //       }
+-    //       return res.json({
+-    //         message: "Technician registered successfully"
+-    //       });
+-    //     });
+-    //   } else {
+-    //     res.json({
+-    //       message: "User registered successfully"
+-    //     });
+-    //   }
+-
+-    // });
+-    db.query(sql, [name, email, phone, address, hashpass, role], (err, result) => {
+-
+-  if (err) {
+-
+-    if (err.code === "ER_DUP_ENTRY") {
+-      return res.status(400).json({ message: "Email already exists" });
+-    }
+-
+-    return res.status(500).json({ message: "Database error" });
+-  }
+-
+-  const userId = result.insertId;
+-
+-  
+-  if (role === 'technician') {
+-
+-    const techSql = `
+-      INSERT INTO technicians (name, phone, address, category, status, user_id)
+-      VALUES (?, ?, ?, 'General', 'Available', ?)
+-    `;
+-
+-    db.query(techSql, [name, phone, address, userId], (techErr) => {
+-
+-      if (techErr) {
+-        console.error("Technician insert error:", techErr);
+       }
+     );
+ 
+-  } catch (err) {
+-    console.error("Registration error:", err);
+-    return res.status(500).json({ message: "Server error. Please try again." });
+-      return res.json({
+-        message: "Technician registered successfully"
+-      });
+-    });
+-
+-  } else {
+-
+-    res.json({
+-      message: "User registered successfully"
+-    });
+-
+-  }
+-
+-});
+-
+   } catch (error) {
+-
+-    res.status(500).json({
+-      message: "Error hashing password"
++    console.error("Registration error:", error);
++    return res.status(500).json({
++      message: "Server error. Please try again."
+     });
+-
+   }
+-
+ });
+ 
+ 
+-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+-//  LOGIN
+-//  - Technician login also fetches their skills + availability
+-//    from technicians table for complaint matching
+-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
++// ============================================================
++// LOGIN
++// ============================================================
+ router.post("/login", (req, res) => {
+ 
+   const { email, password } = req.body;
+@@ -203,49 +379,51 @@ router.post("/login", (req, res) => {
+       return res.json({ message: "Invalid Credentials" });
+     }
+ 
+-    const user  = results[0];
++    const user = results[0];
+     const match = await bcrypt.compare(password, user.password);
+ 
+     if (!match) {
+       return res.json({ message: "Invalid Credentials" });
+     }
+ 
+-    // ΓöÇΓöÇ Technician: also fetch their skills profile ΓöÇΓöÇΓöÇΓöÇΓöÇ
++    // If technician ΓåÆ fetch profile
+     if (user.role === "technician") {
+ 
+       db.query(
+-        `SELECT id, category, skills, status, availability, experience
++        `SELECT id, category, skills, availability, experience
+          FROM technicians
+          WHERE user_id = ?
+          LIMIT 1`,
+         [user.id],
+         (techErr, techRows) => {
+ 
+-          if (techErr) console.error("Tech profile lookup error:", techErr);
++          if (techErr) {
++            console.error("Tech profile lookup error:", techErr);
++          }
+ 
+           const tech = techRows && techRows.length > 0 ? techRows[0] : null;
+ 
+           return res.json({
+-            id:            user.id,
+-            name:          user.name,
+-            phone:         user.phone,
+-            address:       user.address,
+-            role:          user.role,
++            id: user.id,
++            name: user.name,
++            phone: user.phone,
++            address: user.address,
++            role: user.role,
+             technician_id: tech ? tech.id : null,
+-            skills:        tech ? (tech.skills   || tech.category || null) : null,
+-            availability:  tech ? (tech.availability || tech.status || null) : null,
+-            experience:    tech ? (tech.experience || null) : null,
++            skills: tech ? (tech.skills || tech.category) : null,
++            availability: tech ? tech.availability : null,
++            experience: tech ? tech.experience : null,
+           });
+         }
+       );
+ 
+     } else {
+       return res.json({
+-        id:      user.id,
+-        name:    user.name,
+-        phone:   user.phone,
++        id: user.id,
++        name: user.name,
++        phone: user.phone,
+         address: user.address,
+-        role:    user.role,
++        role: user.role,
+       });
+     }
+ 
+diff --git a/routes/complaints.js b/routes/complaints.js
+index 74d2412..0d6a8b3 100644
+--- a/routes/complaints.js
++++ b/routes/complaints.js
+@@ -15,52 +15,77 @@ const storage = multer.diskStorage({
+   }
+ });
+ 
++// const upload = multer({ storage: storage });
++
++// router.get("/", (req, res) => {
++
++//   const role         = req.query.role;
++//   const userId       = req.query.user_id;
++//   const technicianId = req.query.technician_id;
++
++//   let sql = `
++//     SELECT complaints.*,
++//            technicians.name    AS technician_name,
++//            technicians.phone   AS technician_phone,
++//            technicians.address AS technician_address,
++//            technicians.status  AS technician_status,
++//            users.name    AS user_name,
++//            users.phone   AS user_phone,
++//            users.address AS user_address
++//     FROM complaints
++//     LEFT JOIN technicians ON complaints.technician_id = technicians.id
++//     LEFT JOIN users       ON complaints.user_id       = users.id
++//   `;
++//   const role = req.query.role;
++//   const userId = req.query.user_id;
++
++//   // let sql = `
++//   //   SELECT complaints.*, 
++//   //          technicians.name AS technician_name,
++//   //          technicians.status AS technician_status
++//   //   FROM complaints
++//   //   LEFT JOIN technicians 
++//   //     ON complaints.technician_id = technicians.id
++//   // `;
++//   let sql =`SELECT complaints.*, 
++//        technicians.name AS technician_name,
++//        technicians.rating AS rating,
++//        technicians.phone AS technician_phone,
++//        technicians.address AS technician_address,
++//        technicians.status AS technician_status,
++//        users.name AS user_name,
++//        users.phone AS user_phone,
++//        users.address AS user_address
++// FROM complaints
++// LEFT JOIN technicians 
++// ON complaints.technician_id = technicians.id
++// LEFT JOIN users
++// ON complaints.user_id = users.id`;
+ const upload = multer({ storage: storage });
+ 
+ router.get("/", (req, res) => {
+ 
+-  const role         = req.query.role;
+-  const userId       = req.query.user_id;
++  const role = req.query.role;
++  const userId = req.query.user_id;
+   const technicianId = req.query.technician_id;
+ 
+   let sql = `
+-    SELECT complaints.*,
+-           technicians.name    AS technician_name,
+-           technicians.phone   AS technician_phone,
++    SELECT complaints.*, 
++           technicians.name AS technician_name,
++           technicians.rating AS rating,
++           technicians.phone AS technician_phone,
+            technicians.address AS technician_address,
+-           technicians.status  AS technician_status,
+-           users.name    AS user_name,
+-           users.phone   AS user_phone,
++           technicians.status AS technician_status,
++           users.name AS user_name,
++           users.phone AS user_phone,
+            users.address AS user_address
+     FROM complaints
+-    LEFT JOIN technicians ON complaints.technician_id = technicians.id
+-    LEFT JOIN users       ON complaints.user_id       = users.id
++    LEFT JOIN technicians 
++      ON complaints.technician_id = technicians.id
++    LEFT JOIN users
++      ON complaints.user_id = users.id
+   `;
+-  const role = req.query.role;
+-  const userId = req.query.user_id;
+ 
+-  // let sql = `
+-  //   SELECT complaints.*, 
+-  //          technicians.name AS technician_name,
+-  //          technicians.status AS technician_status
+-  //   FROM complaints
+-  //   LEFT JOIN technicians 
+-  //     ON complaints.technician_id = technicians.id
+-  // `;
+-  let sql =`SELECT complaints.*, 
+-       technicians.name AS technician_name,
+-       technicians.rating AS rating,
+-       technicians.phone AS technician_phone,
+-       technicians.address AS technician_address,
+-       technicians.status AS technician_status,
+-       users.name AS user_name,
+-       users.phone AS user_phone,
+-       users.address AS user_address
+-FROM complaints
+-LEFT JOIN technicians 
+-ON complaints.technician_id = technicians.id
+-LEFT JOIN users
+-ON complaints.user_id = users.id`;
+ 
+   if (role === "user") {
+     sql += ` WHERE complaints.user_id = ${db.escape(userId)}`;
+@@ -451,10 +476,7 @@ router.post("/", upload.single("image"), async (req, res) => {
+           FROM technicians
+           WHERE (category = ? OR skills LIKE ?)
+             AND (status = 'Available' OR availability = 'Available')
+-          ORDER BY address_match_score DESC, RAND()
+-          WHERE category = ?
+-          AND status = 'Available'
+-          ORDER BY address_match_score DESC,rating DESC, RAND()
++          ORDER BY address_match_score DESC, rating DESC, RAND()
+           LIMIT 1
+         `;
+ 
+diff --git a/routes/technicians.js b/routes/technicians.js
+index d031750..12d7839 100644
+--- a/routes/technicians.js
++++ b/routes/technicians.js
+@@ -36,18 +36,6 @@ router.get("/", (req, res) => {
+       console.error("Technicians fetch error:", err);
+       return res.status(500).json({ message: "Database error" });
+     }
+-  const query = `
+-    SELECT *
+-    FROM technicians
+-    WHERE id IN (
+-      SELECT MIN(id)
+-      FROM technicians
+-      GROUP BY category
+-    )
+-  `;
+-
+-  db.query(query, (err, results) => {
+-    if (err) throw err;
+     res.json(results);
+   });
+ });
