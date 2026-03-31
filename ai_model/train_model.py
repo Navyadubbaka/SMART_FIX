@@ -32,7 +32,7 @@ model = tf.keras.Sequential([
 
  tf.keras.layers.Flatten(),
  tf.keras.layers.Dense(128,activation='relu'),
- tf.keras.layers.Dense(3,activation='softmax')
+ tf.keras.layers.Dense(train_data.num_classes,activation='softmax')
 ])
 
 model.compile(

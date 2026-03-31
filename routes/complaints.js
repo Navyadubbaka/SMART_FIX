@@ -36,6 +36,31 @@ router.get("/", (req, res) => {
     LEFT JOIN technicians ON complaints.technician_id = technicians.id
     LEFT JOIN users       ON complaints.user_id       = users.id
   `;
+  const role = req.query.role;
+  const userId = req.query.user_id;
+
+  // let sql = `
+  //   SELECT complaints.*, 
+  //          technicians.name AS technician_name,
+  //          technicians.status AS technician_status
+  //   FROM complaints
+  //   LEFT JOIN technicians 
+  //     ON complaints.technician_id = technicians.id
+  // `;
+  let sql =`SELECT complaints.*, 
+       technicians.name AS technician_name,
+       technicians.rating AS rating,
+       technicians.phone AS technician_phone,
+       technicians.address AS technician_address,
+       technicians.status AS technician_status,
+       users.name AS user_name,
+       users.phone AS user_phone,
+       users.address AS user_address
+FROM complaints
+LEFT JOIN technicians 
+ON complaints.technician_id = technicians.id
+LEFT JOIN users
+ON complaints.user_id = users.id`;
 
   if (role === "user") {
     sql += ` WHERE complaints.user_id = ${db.escape(userId)}`;
@@ -427,6 +452,9 @@ router.post("/", upload.single("image"), async (req, res) => {
           WHERE (category = ? OR skills LIKE ?)
             AND (status = 'Available' OR availability = 'Available')
           ORDER BY address_match_score DESC, RAND()
+          WHERE category = ?
+          AND status = 'Available'
+          ORDER BY address_match_score DESC,rating DESC, RAND()
           LIMIT 1
         `;
 
@@ -543,6 +571,7 @@ router.put("/resolve/:id", (req, res) => {
   );
 
 });
+
 router.delete("/:id", (req, res) => {
 
   const id = req.params.id;
@@ -563,6 +592,51 @@ router.delete("/:id", (req, res) => {
     res.json({ message: "Complaint deleted successfully" });
 
   });
+
+});
+
+router.post("/rate", (req, res) => {
+
+  const { technician_id, rating } = req.body;
+
+  if (!technician_id || !rating) {
+    return res.status(400).json({ message: "Missing data" });
+  }
+
+  // Step 1: Get current rating
+  db.query(
+    "SELECT rating, total_ratings FROM technicians WHERE id=?",
+    [technician_id],
+    (err, result) => {
+
+      if (err || result.length === 0) {
+        return res.status(500).json({ message: "Technician not found" });
+      }
+
+      let currentRating = result[0].rating;
+      let totalRatings = result[0].total_ratings;
+
+      // Step 2: Calculate new average
+      let newTotal = totalRatings + 1;
+      let newRating = ((currentRating * totalRatings) + rating) / newTotal;
+
+      // Step 3: Update DB
+      db.query(
+        "UPDATE technicians SET rating=?, total_ratings=? WHERE id=?",
+        [newRating, newTotal, technician_id],
+        (err) => {
+
+          if (err) {
+            return res.status(500).json({ message: "Update failed" });
+          }
+
+          res.json({ message: "Rating submitted", newRating });
+
+        }
+      );
+
+    }
+  );
 
 });
 
