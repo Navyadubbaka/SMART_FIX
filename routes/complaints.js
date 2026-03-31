@@ -19,44 +19,39 @@ const upload = multer({ storage: storage });
 
 router.get("/", (req, res) => {
 
-  const role = req.query.role;
-  const userId = req.query.user_id;
+  const role         = req.query.role;
+  const userId       = req.query.user_id;
+  const technicianId = req.query.technician_id;
 
-  // let sql = `
-  //   SELECT complaints.*, 
-  //          technicians.name AS technician_name,
-  //          technicians.status AS technician_status
-  //   FROM complaints
-  //   LEFT JOIN technicians 
-  //     ON complaints.technician_id = technicians.id
-  // `;
-  let sql =`SELECT complaints.*, 
-       technicians.name AS technician_name,
-       technicians.phone AS technician_phone,
-       technicians.address AS technician_address,
-       technicians.status AS technician_status,
-       users.name AS user_name,
-       users.phone AS user_phone,
-       users.address AS user_address
-FROM complaints
-LEFT JOIN technicians 
-ON complaints.technician_id = technicians.id
-LEFT JOIN users
-ON complaints.user_id = users.id`;
+  let sql = `
+    SELECT complaints.*,
+           technicians.name    AS technician_name,
+           technicians.phone   AS technician_phone,
+           technicians.address AS technician_address,
+           technicians.status  AS technician_status,
+           users.name    AS user_name,
+           users.phone   AS user_phone,
+           users.address AS user_address
+    FROM complaints
+    LEFT JOIN technicians ON complaints.technician_id = technicians.id
+    LEFT JOIN users       ON complaints.user_id       = users.id
+  `;
 
   if (role === "user") {
-    sql += ` WHERE complaints.user_id = ${userId}`;
+    sql += ` WHERE complaints.user_id = ${db.escape(userId)}`;
+  } else if (role === "technician" && technicianId) {
+    // Technician sees only complaints assigned to them
+    sql += ` WHERE complaints.technician_id = ${db.escape(technicianId)}`;
   }
+  // admin: no filter — sees all complaints
 
   sql += " ORDER BY complaints.id DESC";
 
   db.query(sql, (err, results) => {
-
     if (err) {
       console.error(err);
       return res.status(500).json({ message: "Database Error" });
     }
-
     res.json(results);
   });
 });
@@ -412,12 +407,13 @@ router.post("/", upload.single("image"), async (req, res) => {
         const addressWords = userAddress.toLowerCase().split(/[,\s]+/).filter(w => w.length > 2);
 
         // Build proximity SQL: prefer technicians whose address shares words with user's address
+        // Supports BOTH legacy columns (category/status) and new columns (skills/availability)
         let techSql = `
           SELECT *, (
         `;
 
         if (addressWords.length > 0) {
-          const matchClauses = addressWords.map(() => 
+          const matchClauses = addressWords.map(() =>
             `(LOWER(address) LIKE ?)`
           );
           techSql += matchClauses.join(" + ");
@@ -428,15 +424,17 @@ router.post("/", upload.single("image"), async (req, res) => {
         techSql += `
           ) AS address_match_score
           FROM technicians
-          WHERE category = ?
-          AND status = 'Available'
+          WHERE (category = ? OR skills LIKE ?)
+            AND (status = 'Available' OR availability = 'Available')
           ORDER BY address_match_score DESC, RAND()
           LIMIT 1
         `;
 
+        const skillPattern = `%${predictedCategory}%`;
         const params = [
           ...addressWords.map(w => `%${w}%`),
-          predictedCategory
+          predictedCategory,
+          skillPattern
         ];
 
         db.query(techSql, params, (err, tech) => {
@@ -468,7 +466,7 @@ router.post("/", upload.single("image"), async (req, res) => {
 
               if (techId) {
                 db.query(
-                  "UPDATE technicians SET status='Busy' WHERE id=?",
+                  "UPDATE technicians SET status='Busy', availability='Busy' WHERE id=?",
                   [techId]
                 );
               }
@@ -528,7 +526,7 @@ router.put("/resolve/:id", (req, res) => {
           if (techId) {
 
             db.query(
-              "UPDATE technicians SET status='Available' WHERE id=?",
+              "UPDATE technicians SET status='Available', availability='Available' WHERE id=?",
               [techId]
             );
 

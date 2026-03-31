@@ -1,99 +1,279 @@
+/* ======================================================
+   SmartFix — Register Page Styles
+   ====================================================== */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; }
+
 body {
   margin: 0;
-  font-family: 'Segoe UI', Tahoma, sans-serif;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
   background: linear-gradient(135deg, #4e73df, #1cc88a);
+  min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center;
-  height: 100vh;
+  align-items: flex-start;
+  padding: 30px 16px 60px;
 }
 
+/* ── Card ──────────────────────────────────────────────── */
 .auth-wrapper {
   width: 100%;
-  max-width: 420px;
+  max-width: 480px;
 }
 
 .auth-card {
   background: #ffffff;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
-  text-align: center;
+  padding: 40px 36px;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+}
+
+/* ── Brand ─────────────────────────────────────────────── */
+.brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.brand-icon {
+  font-size: 28px;
+  background: linear-gradient(135deg, #4e73df, #1cc88a);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .logo {
-  margin-bottom: 5px;
-  color: #4e73df;
+  margin: 0;
+  font-size: 28px;
+  font-weight: 700;
+  color: #2c3e50;
+  letter-spacing: -0.5px;
 }
 
 .subtitle {
+  text-align: center;
+  color: #7f8c8d;
   font-size: 14px;
-  color: #777;
-  margin-bottom: 25px;
+  margin: 6px 0 28px;
 }
 
+/* ── Form Groups ───────────────────────────────────────── */
 .form-group {
   text-align: left;
-  margin-bottom: 18px;
+  margin-bottom: 16px;
 }
 
 .form-group label {
   display: block;
   font-size: 13px;
   font-weight: 600;
+  color: #2c3e50;
   margin-bottom: 6px;
 }
 
+.required-star { color: #e74c3c; }
+
+.optional-tag {
+  font-size: 11px;
+  font-weight: 400;
+  color: #999;
+  margin-left: 4px;
+}
+
+.field-hint {
+  font-size: 12px;
+  color: #95a5a6;
+  margin: -4px 0 10px;
+}
+
 input,
-select {
+select,
+textarea {
   width: 100%;
-  padding: 10px;
-  border-radius: 6px;
-  border: 1px solid #ccc;
+  padding: 10px 13px;
+  border-radius: 8px;
+  border: 1.5px solid #dfe4ea;
   font-size: 14px;
-  transition: 0.3s;
+  font-family: inherit;
+  color: #2c3e50;
+  background: #f9fafc;
+  transition: border-color 0.25s, box-shadow 0.25s;
+  appearance: auto;
 }
 
 input:focus,
 select:focus {
   outline: none;
   border-color: #4e73df;
-  box-shadow: 0 0 6px rgba(78, 115, 223, 0.3);
+  box-shadow: 0 0 0 3px rgba(78, 115, 223, 0.15);
+  background: #fff;
 }
 
+/* ── Password Wrap ─────────────────────────────────────── */
+.password-wrap {
+  position: relative;
+}
+
+.password-wrap input {
+  padding-right: 42px;
+}
+
+.toggle-pw {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.toggle-pw:hover { opacity: 1; }
+
+/* ── Technician Section ────────────────────────────────── */
+.tech-section {
+  overflow: hidden;
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: max-height 0.45s ease, opacity 0.35s ease, transform 0.35s ease;
+  pointer-events: none;
+}
+
+.tech-section.visible {
+  max-height: 800px;
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+
+.tech-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 8px 0 20px;
+  color: #4e73df;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.tech-divider::before,
+.tech-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #4e73df40, transparent);
+}
+
+/* ── Skills Chip Grid ──────────────────────────────────── */
+.skills-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.skill-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 12px;
+  border: 1.5px solid #dfe4ea;
+  border-radius: 20px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #555;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  background: #f9fafc;
+}
+
+.skill-chip:hover {
+  border-color: #4e73df;
+  color: #4e73df;
+  background: #eef2ff;
+}
+
+.skill-chip input[type="checkbox"] {
+  width: auto;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  cursor: pointer;
+  accent-color: #4e73df;
+}
+
+.skill-chip:has(input:checked) {
+  border-color: #4e73df;
+  background: #4e73df;
+  color: #fff;
+}
+
+/* ── Button ────────────────────────────────────────────── */
 .btn-primary {
   width: 100%;
-  padding: 10px;
+  padding: 13px;
   border: none;
-  border-radius: 6px;
-  background: #4e73df;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #4e73df, #224abe);
   color: white;
   font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
   cursor: pointer;
-  transition: 0.3s;
-  margin-top: 10px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  margin-top: 8px;
+  letter-spacing: 0.3px;
 }
 
 .btn-primary:hover {
-  background: #2e59d9;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(78, 115, 223, 0.4);
 }
 
+.btn-primary:active { transform: translateY(0); }
+
+.btn-loader {
+  margin-left: 6px;
+  animation: spin 1s linear infinite;
+  display: inline-block;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Message ───────────────────────────────────────────── */
 .message {
-  margin-top: 15px;
-  font-size: 14px;
+  margin-top: 14px;
+  font-size: 13.5px;
   font-weight: 500;
+  text-align: center;
+  min-height: 20px;
+  transition: color 0.3s;
 }
 
+/* ── Footer ────────────────────────────────────────────── */
 .footer-text {
-  margin-top: 20px;
+  margin-top: 22px;
+  text-align: center;
   font-size: 13px;
+  color: #7f8c8d;
 }
 
 .footer-text a {
   color: #4e73df;
   text-decoration: none;
+  font-weight: 600;
 }
 
-.footer-text a:hover {
-  text-decoration: underline;
-}
+.footer-text a:hover { text-decoration: underline; }
