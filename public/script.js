@@ -77,6 +77,7 @@ async function loadTechnicians() {
           Phone: ${t.phone || "N/A"}<br>
           Address: ${t.address || "N/A"}<br>
           Status: <strong>${t.status}</strong>
+
         </div>
       `;
     });
@@ -108,7 +109,9 @@ async function loadComplaints() {
     let resolved = 0;
 
     data.forEach(c => {
-
+      if(c.rating) {
+  selectedRatings[c.id] = c.rating;
+}
       total++;
       if (c.status === "Pending") pending++;
       if (c.status === "Resolved") resolved++;
@@ -134,7 +137,8 @@ async function loadComplaints() {
 
           <strong>AI Category:</strong> ${c.category || "Detecting..."} <br>
 
-          <strong>Technician:</strong> ${c.technician_name || "Not Assigned"} <br>
+          <strong>Technician:</strong> 
+${c.technician_name || "Not Assigned"} ⭐ ${c.rating ? c.rating.toFixed(1) : 0} <br>
           <strong>Technician Address:</strong> ${c.technician_address || "N/A"} <br>
 
           ${currentUser.role !== "technician" ? `
@@ -147,6 +151,19 @@ async function loadComplaints() {
           ` : ""}
 
           <div class="status ${statusClass}">${c.status}</div>
+         ${currentUser.role === "user" && c.status === "Resolved" ? `
+  <div class="rating-box">
+   <div class="stars" id="stars-${c.id}">
+  ${[1,2,3,4,5].map(i => `
+    <span onclick="setRating(${c.id},${i})" class="${c.rating && i <= c.rating ? 'active' : ''}">⭐</span>
+  `).join('')}
+</div>
+
+    <button class="rate-btn" onclick="submitRating(${c.technician_id}, ${c.id})">
+      Submit Rating
+    </button>
+  </div>
+` : ""}
 
           ${c.image
           ? `<img src="http://localhost:3000/uploads/${c.image}" 
@@ -155,12 +172,13 @@ async function loadComplaints() {
           : ""
         }
 
-          ${currentUser.role === "technician" && c.status === "Pending"
-          ? `<button class="btn-resolve" onclick="resolveComplaint(${c.id})">
-                   Mark Resolved
-                 </button>`
-          : ""
-        }
+       
+   ${currentUser.role === "technician" && c.status === "Pending"
+  ? `<button class="btn-resolve" onclick="resolveComplaint(${c.id})">
+       Mark Resolved
+     </button>`
+  : ""
+}
 
           ${currentUser.role === "admin" && c.status === "Resolved"
           ? `<button class="btn-delete" onclick="deleteComplaint(${c.id})">
@@ -239,19 +257,38 @@ if (complaintForm) {
   });
 }
 
+// async function resolveComplaint(id) {
+//   try {
+
+//     await fetch(API + "/complaints/resolve/" + id, {
+//       method: "PUT"
+//     });
+
+//     loadComplaints();
+
+//   } catch (error) {
+
+//     console.error("Error resolving complaint:", error);
+
+//   }
+// }
 async function resolveComplaint(id) {
   try {
 
     await fetch(API + "/complaints/resolve/" + id, {
-      method: "PUT"
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        technician_id: currentUser.id  
+      })
     });
 
     loadComplaints();
 
   } catch (error) {
-
     console.error("Error resolving complaint:", error);
-
   }
 }
 
@@ -335,3 +372,45 @@ document.addEventListener("click", function (e) {
     closeCallModal();
   }
 });
+
+let selectedRatings = {};
+function setRating(complaintId, rating) {
+  // Update selected rating
+  selectedRatings[complaintId] = rating;
+
+  // Update star visuals
+  const stars = document.querySelectorAll(`#stars-${complaintId} span`);
+  stars.forEach((star, index) => {
+    star.classList.toggle("active", index < rating);
+  });
+}
+async function submitRating(technicianId, complaintId) {
+
+  const rating = selectedRatings[complaintId];
+
+  if (!rating) {
+    alert("Please select rating!");
+    return;
+  }
+
+  try {
+
+    await fetch(API + "/complaints/rate", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        technician_id: technicianId,
+        rating: rating
+      })
+    });
+
+    alert("⭐ Rating submitted successfully!");
+
+    loadComplaints();
+
+  } catch (error) {
+    console.error("Rating error:", error);
+  }
+}

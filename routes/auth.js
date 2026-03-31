@@ -17,42 +17,83 @@ router.post("/register", async (req, res) => {
       VALUES (?, ?, ?, ?, ?, ?)
     `;
 
+    // db.query(sql, [name, email, phone, address, hashpass, role], (err, result) => {
+
+    //   if (err) {
+
+    //     if (err.code === "ER_DUP_ENTRY") {
+    //       return res.status(400).json({
+    //         message: "Email already exists"
+    //       });
+    //     }
+
+    //     return res.status(500).json({
+    //       message: "Database error"
+    //     });
+    //   }
+
+    //   if (role === 'technician') {
+    //     const techSql = `
+    //       INSERT INTO technicians (name, phone, address, category, status)
+    //       VALUES (?, ?, ?, 'General', 'Available')
+    //     `;
+    //     db.query(techSql, [name, phone, address], (techErr) => {
+    //       if (techErr) {
+    //         console.error("Error inserting into technicians:", techErr);
+    //         // We can still return success for user registration, or a partial error
+    //       }
+    //       return res.json({
+    //         message: "Technician registered successfully"
+    //       });
+    //     });
+    //   } else {
+    //     res.json({
+    //       message: "User registered successfully"
+    //     });
+    //   }
+
+    // });
     db.query(sql, [name, email, phone, address, hashpass, role], (err, result) => {
 
-      if (err) {
+  if (err) {
 
-        if (err.code === "ER_DUP_ENTRY") {
-          return res.status(400).json({
-            message: "Email already exists"
-          });
-        }
+    if (err.code === "ER_DUP_ENTRY") {
+      return res.status(400).json({ message: "Email already exists" });
+    }
 
-        return res.status(500).json({
-          message: "Database error"
-        });
+    return res.status(500).json({ message: "Database error" });
+  }
+
+  const userId = result.insertId;
+
+  
+  if (role === 'technician') {
+
+    const techSql = `
+      INSERT INTO technicians (name, phone, address, category, status, user_id)
+      VALUES (?, ?, ?, 'General', 'Available', ?)
+    `;
+
+    db.query(techSql, [name, phone, address, userId], (techErr) => {
+
+      if (techErr) {
+        console.error("Technician insert error:", techErr);
       }
 
-      if (role === 'technician') {
-        const techSql = `
-          INSERT INTO technicians (name, phone, address, category, status)
-          VALUES (?, ?, ?, 'General', 'Available')
-        `;
-        db.query(techSql, [name, phone, address], (techErr) => {
-          if (techErr) {
-            console.error("Error inserting into technicians:", techErr);
-            // We can still return success for user registration, or a partial error
-          }
-          return res.json({
-            message: "Technician registered successfully"
-          });
-        });
-      } else {
-        res.json({
-          message: "User registered successfully"
-        });
-      }
-
+      return res.json({
+        message: "Technician registered successfully"
+      });
     });
+
+  } else {
+
+    res.json({
+      message: "User registered successfully"
+    });
+
+  }
+
+});
 
   } catch (error) {
 
